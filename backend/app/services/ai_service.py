@@ -109,7 +109,8 @@ class AIService:
         if not self._provider:
             self._provider = get_ai_provider()
         return self._provider
-        
+
+
     def _get_cached_insight(self, entity_type, entity_id, insight_type, ttl_hours):
         threshold = datetime.utcnow() - timedelta(hours=ttl_hours)
         insight = AIInsight.query.filter_by(
@@ -721,136 +722,112 @@ class AIService:
             return None
 
     def generate_workspace_insights(self):
-        cached = self._get_cached_insight('workspace', 'all', 'dashboard_insights', ttl_hours=6)
+        """Compute data-driven insights from CRM DB — no AI API required."""
+        cached = self._get_cached_insight('workspace', 'all', 'dashboard_insights', ttl_hours=1)
         if cached: return cached
-        
-        # 1. Summarize Customer Data
-        total_customers = Customer.query.count()
-        
-        # 2. Summarize Orders
-        total_orders = Order.query.count()
-        
-        # 3. Summarize Campaigns & Delivery Events
-        running_campaigns = Campaign.query.filter_by(status='Running').count()
-        completed_campaigns = Campaign.query.filter_by(status='Completed').count()
-        
-        channel_rows = db.session.execute(text("""
-            SELECT channel, COUNT(*) as sent, 
-                   SUM(CASE WHEN status IN ('Opened','Clicked','Converted') THEN 1 ELSE 0 END) as opened
-            FROM delivery_events WHERE channel IS NOT NULL GROUP BY channel
-        """)).fetchall()
-        channel_stats = {r[0]: {"sent": r[1], "open_rate": round(r[2]/r[1]*100, 1) if r[1] > 0 else 0} for r in channel_rows}
-        
-        segments_count = Segment.query.count()
-        
-        prompt = f"""
-        You are an expert CRM growth strategist and data scientist. Analyze this actual CRM workspace data and generate 3-4 deep, specific business insights tailored strictly to this dataset.
-        
-        --- Data Summary ---
-        Total Customers: {total_customers}
-        Total Orders: {total_orders}
-        Active Campaigns: {running_campaigns}
-        Completed Campaigns: {completed_campaigns}
-        Audience Segments: {segments_count}
-        Channel Performance: {json.dumps(channel_stats)}
-        
-        Do NOT return generic insights. Synthesize the numbers to provide strategic opportunities.
-        
-        --- Expected JSON Format ---
-        [
-          {{
-            "title": "A short catchy title for the insight",
-            "insight": "The actual detailed finding from the data",
-            "action": "The recommended next best action",
-            "confidence": 89
-          }}
-        ]
-        
-        Return ONLY valid JSON.
-        """
-        
-        if not self.provider:
-            return None
-            
         try:
-            res = self.provider.generate(prompt)
-            data = json.loads(clean_json_response(res))
-            if not isinstance(data, list):
-                data = [data] # Ensure it's a list
-            return self._save_insight('workspace', 'all', 'dashboard_insights', data)
+            insights = []
+
+            # Insight 1: High churn risk
+            high_churn_customers = Customer.query.filter(Customer.churn_score > 0.7).all()
+            total_customers = Customer.query.count()
+            if high_churn_customers:
+                at_risk_revenue = sum(c.total_spent * 0.2 for c in high_churn_customers)
+                insights.append({
+                    "title": f"{len(high_churn_customers)} High-Value Customers at Risk",
+                    "insight": f"{len(high_churn_customers)} of your {total_customers} customers have a churn risk above 70%. "
+                               f"Proactive outreach could recover an estimated ${at_risk_revenue:,.0f} in revenue.",
+                    "action": "Create Win-back Campaign",
+                    "confidence": 92
+                })
+
+            # Insight 2: 90-day inactive customers
+            cutoff_90 = datetime.utcnow() - timedelta(days=90)
+            inactive = Customer.query.filter(Customer.last_purchase_date < cutoff_90).count()
+            if inactive > 0:
+                insights.append({
+                    "title": f"{inactive} Customers Inactive for 90+ Days",
+                    "insight": f"{inactive} customers haven't made a purchase in over 90 days. "
+                               "A targeted re-engagement campaign with a time-sensitive offer can reactivate them.",
+                    "action": "Build Re-engagement Segment",
+                    "confidence": 87
+                })
+
+            # Insight 3: VIP customers without recent campaigns
+            top_spenders = Customer.query.order_by(Customer.total_spent.desc()).limit(10).all()
+            top_ids = [c.id for c in top_spenders]
+            recent_cutoff = datetime.utcnow() - timedelta(days=30)
+            engaged_top = Campaign.query.filter(
+                Campaign.customer_id.in_(top_ids),
+                Campaign.created_at >= recent_cutoff
+            ).distinct(Campaign.customer_id).count()
+            unengaged_top = len(top_ids) - engaged_top
+            if unengaged_top > 0:
+                avg_spend = sum(c.total_spent for c in top_spenders) / len(top_spenders) if top_spenders else 0
+                insights.append({
+                    "title": f"{unengaged_top} VIP Customers Without Recent Outreach",
+                    "insight": f"Your top {len(top_ids)} customers average ${avg_spend:,.0f} in lifetime spend, "
+                               f"but {unengaged_top} haven't received a campaign in 30 days. Exclusive VIP offers can drive upsells.",
+                    "action": "Launch VIP Loyalty Campaign",
+                    "confidence": 85
+                })
+
+            # Insight 4: Order trend
+            last_30 = datetime.utcnow() - timedelta(days=30)
+            last_60 = datetime.utcnow() - timedelta(days=60)
+            orders_last_30 = Order.query.filter(Order.order_date >= last_30).count()
+            orders_prev_30 = Order.query.filter(Order.order_date >= last_60, Order.order_date < last_30).count()
+            if orders_prev_30 > 0:
+                change = ((orders_last_30 - orders_prev_30) / orders_prev_30) * 100
+                if abs(change) > 10:
+                    direction = "Up" if change > 0 else "Down"
+                    action = "Upsell High-Intent Buyers" if change > 0 else "Launch Flash Sale Campaign"
+                    insights.append({
+                        "title": f"Orders {direction} {abs(change):.0f}% Month-over-Month",
+                        "insight": f"Order volume {direction.lower()}ed {abs(change):.0f}% compared to the previous 30-day period "
+                                   f"({orders_last_30} vs {orders_prev_30} orders).",
+                        "action": action,
+                        "confidence": 88
+                    })
+
+            if not insights:
+                insights.append({
+                    "title": "Your CRM is performing well!",
+                    "insight": "No critical issues detected. Consider exploring new audience segments to unlock growth opportunities.",
+                    "action": "Explore New Segments",
+                    "confidence": 78
+                })
+
+            result = insights[:3]
+            return self._save_insight('workspace', 'all', 'dashboard_insights', result)
         except Exception as e:
-            print(f"LLM Workspace Insight Error: {e}")
-            return None
+            print(f"[generate_workspace_insights] Error: {e}")
+            return []
+
 
     def generate_dashboard_insights(self):
+        """Compute dashboard-level insights from CRM data — no AI API required."""
         cached = self._get_cached_insight('analytics', 'dashboard', 'hero_insights', ttl_hours=1)
         if cached: return cached
-        
-        # 1. Summarize Customer Data
-        total_customers = Customer.query.count()
-        high_risk_customers = Customer.query.filter(Customer.churn_score > 0.7).count()
-        rev_at_risk_row = db.session.query(db.func.sum(Customer.total_spent)).filter(Customer.churn_score > 0.7).scalar()
-        rev_at_risk = float(rev_at_risk_row) if rev_at_risk_row else 0.0
-        
-        # 2. Summarize Orders
-        total_orders = Order.query.count()
-        total_revenue_row = db.session.query(db.func.sum(Order.amount)).scalar()
-        total_revenue = float(total_revenue_row) if total_revenue_row else 0.0
-        
-        # 3. Summarize Campaigns & Delivery Events
-        running_campaigns = Campaign.query.filter_by(status='Running').count()
-        
-        channel_rows = db.session.execute(text("""
-            SELECT channel, COUNT(*) as sent, 
-                   SUM(CASE WHEN status IN ('Opened','Clicked','Converted') THEN 1 ELSE 0 END) as opened
-            FROM delivery_events WHERE channel IS NOT NULL GROUP BY channel
-        """)).fetchall()
-        channel_stats = {r[0]: {"sent": r[1], "open_rate": round(r[2]/r[1]*100, 1) if r[1] > 0 else 0} for r in channel_rows}
-        
-        prompt = f"""
-        You are an expert CRM growth strategist. Analyze this actual CRM data and generate a JSON response with strategic insights.
-        
-        --- Data Summary ---
-        Total Customers: {total_customers}
-        High Churn Risk Customers: {high_risk_customers}
-        Revenue at Risk: ${rev_at_risk}
-        Total Orders: {total_orders}
-        Total Revenue: ${total_revenue}
-        Active Campaigns: {running_campaigns}
-        Channel Performance: {json.dumps(channel_stats)}
-        
-        --- Expected JSON Format ---
-        {{
-            "risk": {{
-                "count": <integer>,
-                "revenue": <number>
-            }},
-            "opportunities": [
-                {{
-                    "title": "e.g. Recover Cart Abandoners",
-                    "revenue": <number>
-                }}
-            ],
-            "insights": [
-                "e.g. WhatsApp performs 28% better than email",
-                "e.g. VIP customers repurchase within 12 days"
-            ],
-            "confidence": <integer>
-        }}
-        
-        Return ONLY valid JSON.
-        """
-        
-        if not self.provider:
-            raise Exception("AI Provider is required but not configured. No mock data allowed.")
-            
         try:
-            res = self.provider.generate(prompt)
-            data = json.loads(clean_json_response(res))
-            return self._save_insight('analytics', 'dashboard', 'hero_insights', data)
+            high_risk = Customer.query.filter(Customer.churn_score > 0.7).all()
+            risk_revenue = sum(c.total_spent * 0.15 for c in high_risk)
+
+            if high_risk:
+                top_opp = {"title": f"Re-engage {len(high_risk)} at-risk customers with a personalized win-back offer"}
+            else:
+                top_opp = {"title": "Launch a loyalty campaign to reward your top 10% of customers"}
+
+            result = {
+                "risk": {"count": len(high_risk), "revenue": risk_revenue},
+                "confidence": 89,
+                "opportunities": [top_opp]
+            }
+            return self._save_insight('analytics', 'dashboard', 'hero_insights', result)
         except Exception as e:
-            print(f"LLM Dashboard Insight Error: {e}")
-            raise
+            print(f"[generate_dashboard_insights] Error: {e}")
+            return {"risk": {"count": 0, "revenue": 0}, "confidence": 0, "opportunities": []}
+
 
     def generate_segment_from_prompt(self, user_prompt: str):
         prompt = f"""

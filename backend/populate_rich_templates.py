@@ -67,16 +67,22 @@ for t in rich_templates:
     res = requests.post(base_url, json=t)
     if res.status_code == 200:
         new_id = res.json().get('id')
-        # Inject some fake usage stats directly into the DB for visual completeness
-        import sqlite3
-        conn = sqlite3.connect('ai_crm_v2.db')
-        c = conn.cursor()
         import random
-        c.execute('''UPDATE templates 
-                     SET usage_count=?, open_rate=?, click_rate=?, conversion_rate=? 
-                     WHERE id=?''', 
-                  (random.randint(50, 500), round(random.uniform(20.0, 45.0), 1), round(random.uniform(5.0, 15.0), 1), round(random.uniform(1.0, 5.0), 1), new_id))
-        conn.commit()
-        conn.close()
+        # Inject some fake usage stats via app context
+        import os
+        import sys
+        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__))))
+        from app import create_app
+        from app.models import db, Template
+        
+        app = create_app()
+        with app.app_context():
+            tmpl = Template.query.get(new_id)
+            if tmpl:
+                tmpl.usage_count = random.randint(50, 500)
+                tmpl.open_rate = round(random.uniform(20.0, 45.0), 1)
+                tmpl.click_rate = round(random.uniform(5.0, 15.0), 1)
+                tmpl.conversion_rate = round(random.uniform(1.0, 5.0), 1)
+                db.session.commit()
 
 print("Rich templates created successfully.")

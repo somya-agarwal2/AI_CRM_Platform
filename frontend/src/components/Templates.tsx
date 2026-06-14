@@ -108,7 +108,9 @@ export default function Templates() {
     return true;
   });
 
-  const totalUsage = templates.reduce((acc, t) => acc + (t.usage_count || 0), 0);
+  const avgOpenRate = templates.length > 0 
+    ? (templates.reduce((acc, t) => acc + (t.open_rate || 0), 0) / templates.length).toFixed(1) 
+    : 0;
   const avgConv = templates.length > 0 
     ? (templates.reduce((acc, t) => acc + (t.conversion_rate || 0), 0) / templates.length).toFixed(1) 
     : 0;
@@ -162,9 +164,9 @@ export default function Templates() {
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Activity size={20} color="#f59e0b" />
             </div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Total Uses</div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Avg Open Rate</div>
           </div>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)' }}>{totalUsage}</div>
+          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)' }}>{avgOpenRate}%</div>
         </div>
         <div className="card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -273,11 +275,11 @@ export default function Templates() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Open</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{t.open_rate || 0}%</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{Number(t.open_rate || 0).toFixed(1)}%</span>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Click</span>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{t.click_rate || 0}%</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{Number(t.click_rate || 0).toFixed(1)}%</span>
                     </div>
                   </div>
 
@@ -328,11 +330,11 @@ export default function Templates() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Open</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{t.open_rate || 0}%</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{Number(t.open_rate || 0).toFixed(1)}%</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Click</span>
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{t.click_rate || 0}%</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{Number(t.click_rate || 0).toFixed(1)}%</span>
                   </div>
                 </div>
 

@@ -566,10 +566,13 @@ const CustomerIntelligence = () => {
                           if (res.data?.body) {
                             setEditedMessage(res.data.body);
                           }
-                        } catch (e) {
+                        } catch (e: any) {
                           console.error(e);
+                          const errorMsg = e.response?.data?.error || "AI service is currently unavailable. Please try again later.";
+                          alert(`Regeneration failed: ${errorMsg}`);
+                        } finally {
+                          setGeneratingMessage(false);
                         }
-                        setGeneratingMessage(false);
                       }}
                       disabled={generatingMessage}
                       style={{ padding: '4px 10px', background: 'rgba(36,138,88,0.1)', color: 'var(--accent-secondary)', border: '1px solid rgba(36,138,88,0.2)', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: generatingMessage ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}

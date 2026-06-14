@@ -620,7 +620,9 @@ export default function CampaignStudio() {
         goal: campaignData.goal,
         audience_id: campaignData.audience_id,
         channels: campaignData.channels.join(', '),
-        status: saveStatus
+        status: saveStatus,
+        subject: campaignData.subject,
+        message: campaignData.message
       });
       
       if (saveStatus === 'Running') {
@@ -1269,7 +1271,7 @@ export default function CampaignStudio() {
                             ) : (
                               selectedCampaignForDetails.message
                             )
-                          ) : `Hi {{name}},\n\nWe've missed you!\n\nUse code: WELCOME20\n\nGet 20% off on your next order.`}
+                          ) : `No message content defined yet.`}
                         </div>
                       </div>
                     </div>
@@ -1294,7 +1296,7 @@ export default function CampaignStudio() {
                             ) : (
                               selectedCampaignForDetails.message
                             )
-                          ) : `Hi {{name}},\n\nWe've missed you!\n\nUse code:\n*VIP20*\n\nGet 20% off on your next order.`}
+                          ) : `No message content defined yet.`}
                         </div>
                         <div style={{ textAlign: 'right', fontSize: '9px', color: '#667781', marginTop: '4px' }}>
                           10:05 AM

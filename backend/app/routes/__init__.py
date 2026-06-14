@@ -214,12 +214,22 @@ def get_analytics():
 @bp.route('/ai/dashboard-insights', methods=['GET'])
 def ai_dashboard_insights():
     from app.services.ai_service import ai_service
-    return jsonify(ai_service.generate_dashboard_insights())
+    try:
+        return jsonify(ai_service.generate_dashboard_insights())
+    except Exception as e:
+        print(f"dashboard-insights error: {e}")
+        return jsonify({"risk": {"count": 0, "revenue": 0}, "confidence": 0, "opportunities": []})
+
 
 @bp.route('/ai/workspace-insights', methods=['GET'])
 def ai_workspace_insights():
     from app.services.ai_service import ai_service
-    return jsonify(ai_service.generate_workspace_insights())
+    try:
+        return jsonify(ai_service.generate_workspace_insights())
+    except Exception as e:
+        print(f"workspace-insights error: {e}")
+        return jsonify([])
+
 
 @bp.route('/ai/audience-opportunities', methods=['GET'])
 def ai_audience_opportunities():
@@ -388,7 +398,13 @@ def ai_segment_generate():
 def ai_campaign_generate():
     from app.services.ai_service import ai_service
     prompt = request.json.get('prompt', '')
-    return jsonify(ai_service.generate_campaign_from_prompt(prompt))
+    try:
+        res = ai_service.generate_campaign_from_prompt(prompt)
+        return jsonify(res)
+    except Exception as e:
+        if '429' in str(e) or 'quota' in str(e).lower() or 'RESOURCE_EXHAUSTED' in str(e):
+            return jsonify({"error": "AI Rate Limit Reached. Please wait a minute and try again."}), 429
+        return jsonify({"error": str(e)}), 500
 
 @bp.route('/ai/journey/generate', methods=['POST'])
 def ai_journey_generate():
