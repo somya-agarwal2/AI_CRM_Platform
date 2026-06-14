@@ -13,7 +13,12 @@ def create_app(config_class=Config):
     app.config.from_object(config_class)
     app.url_map.strict_slashes = False
     
-    CORS(app)
+    CORS(app, origins=[
+        "https://ai-crm-platform-steel.vercel.app",
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ])
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)

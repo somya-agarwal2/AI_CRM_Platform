@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Users, Target,  Zap,  PlusCircle, Search, Filter,   Edit2, Copy, Trash2,   } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function AudiencesHub() {
   const [audiencesData, setAudiencesData] = useState<any>(null);

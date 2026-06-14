@@ -3,7 +3,7 @@ import axios from 'axios';
 import { MessageSquare, RefreshCw, Send, Target, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function Journeys() {
   const [journeys, setJourneys] = useState<any[]>([]);

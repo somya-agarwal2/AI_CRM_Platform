@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, BarChart2, Star, Trash2, Copy
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import API_URL from '../config';
 
 // ─────────────────────────────────────────────
 // Types
@@ -579,7 +580,7 @@ export default function JourneyBuilder() {
 
   const fetchActiveJourneys = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/journeys');
+      const res = await fetch(`${API_URL}/journeys');
       const data = await res.json();
       setDbActiveJourneys(data);
     } catch (e) {
@@ -610,7 +611,7 @@ export default function JourneyBuilder() {
         const generateInitial = async () => {
           setGenerating(true);
           try {
-            const res = await fetch('http://localhost:5000/api/ai/journey/generate', {
+            const res = await fetch(`${API_URL}/ai/journey/generate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ prompt: p })
@@ -658,7 +659,7 @@ export default function JourneyBuilder() {
     setSelected(null);
     setAiReasoning(null);
     try {
-      const res = await fetch('http://localhost:5000/api/ai/journey/generate', {
+      const res = await fetch(`${API_URL}/ai/journey/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
@@ -743,7 +744,7 @@ export default function JourneyBuilder() {
     
     if (saveModal.type === 'draft') {
       try {
-        const res = await fetch('http://localhost:5000/api/journeys', {
+        const res = await fetch(`${API_URL}/journeys', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: finalName, nodes: nodes, type: 'dynamic' })
@@ -791,7 +792,7 @@ export default function JourneyBuilder() {
     let activeId = journeyId;
     if (!activeId) {
       try {
-        const res = await fetch('http://localhost:5000/api/journeys', {
+        const res = await fetch(`${API_URL}/journeys', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: finalName, nodes: nodes, type: 'dynamic' })
@@ -806,7 +807,7 @@ export default function JourneyBuilder() {
     
     if (activeId) {
       try {
-        await fetch(`http://localhost:5000/api/journeys/${activeId}/activate`, { method: 'POST' });
+        await fetch(`${API_URL}/journeys/${activeId}/activate`, { method: 'POST' });
         
         setSaved(true); 
         setJourneyStatus('Active');
@@ -818,7 +819,7 @@ export default function JourneyBuilder() {
   async function deleteActiveJourney(id: string) {
     if (confirm('Are you sure you want to delete this active journey?')) {
       try {
-        await fetch(`http://localhost:5000/api/journeys/${id}`, { method: 'DELETE' });
+        await fetch(`${API_URL}/journeys/${id}`, { method: 'DELETE' });
         fetchActiveJourneys();
       } catch (e) {
         console.error("Failed to delete journey");

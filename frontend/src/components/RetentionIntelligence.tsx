@@ -4,7 +4,7 @@ import { AlertTriangle, TrendingDown, DollarSign, Activity,  BarChart2, PieChart
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function RetentionIntelligence() {
   const [data, setData] = useState<any>(null);

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Users, Filter, Sparkles, Search, MoreHorizontal, ArrowLeft,    GitBranch, PlusCircle, CheckCircle2 } from 'lucide-react';
 import { TEMPLATES } from './JourneyBuilder';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function SegmentDetail() {
   const { id } = useParams();

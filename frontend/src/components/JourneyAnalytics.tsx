@@ -6,7 +6,7 @@ import {
   ChevronRight, MessageSquare, Mail, Smartphone, Award, ArrowUpRight 
 } from 'lucide-react';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 const JourneyAnalytics = () => {
   const { id } = useParams();

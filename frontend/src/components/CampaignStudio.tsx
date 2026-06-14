@@ -16,7 +16,7 @@ class ErrorBoundary extends React.Component<any, any> {
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 
 const CreateCampaignModal = ({ isOpen, onClose, segments, onSave }: any) => {

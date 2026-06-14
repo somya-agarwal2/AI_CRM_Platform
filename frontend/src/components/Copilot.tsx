@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Send, Sparkles, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function Copilot() {
   const [prompt, setPrompt] = useState('');

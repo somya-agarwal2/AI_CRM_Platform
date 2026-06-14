@@ -2,7 +2,7 @@ import  { useState, useEffect, useRef } from 'react';
 import { Settings, Play, Terminal, Database } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 const ChannelSimulator = () => {
   const [logs, setLogs] = useState<string[]>([

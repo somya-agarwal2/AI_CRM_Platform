@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
+import API_URL from '../config';
   ArrowLeft, Save, LayoutTemplate, Type, Image as ImageIcon, Square, Minus, 
   Settings2, Monitor, Tablet, Smartphone, Sparkles, Trash2, CheckCircle2,
   Ticket, Grid, ShoppingBag, Link as LinkIcon, Heading, PanelBottom, Video, Timer,
@@ -50,7 +51,7 @@ export default function TemplateEditor() {
 
   const fetchTemplate = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/templates');
+      const res = await axios.get(`${API_URL}/templates');
       const t = res.data.find((x: any) => x.id === id);
       if (t) {
         setTemplate(t);
@@ -75,7 +76,7 @@ export default function TemplateEditor() {
     const newThumbnail = firstImageBlock ? firstImageBlock.url : template.thumbnail;
 
     try {
-      await axios.put(`http://localhost:5000/api/templates/${id}`, {
+      await axios.put(`${API_URL}/templates/${id}`, {
         name: template.name,
         category: template.category,
         thumbnail: newThumbnail,
@@ -158,7 +159,7 @@ export default function TemplateEditor() {
     setRewriting(true);
     setRewriteStatus('Rewriting with AI...');
     try {
-      const res = await axios.post('http://localhost:5000/api/templates/ai-rewrite', { block_json: block, instruction }, { timeout: 30000 });
+      const res = await axios.post(`${API_URL}/templates/ai-rewrite', { block_json: block, instruction }, { timeout: 30000 });
       // Merge new content back while keeping the same block id and type
       setBlocks(prev => prev.map(b => b.id === selectedBlockId ? { ...b, content: res.data.content ?? res.data } : b));
       setRewriteStatus('✓ Done!');

@@ -4,7 +4,7 @@ import { TrendingUp, DollarSign, Activity, PieChart, Users, PlayCircle,  Zap, Ar
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function ValueIntelligence() {
   const [data, setData] = useState<any>(null);

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
+import API_URL from '../config';
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
 
@@ -27,7 +28,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/ai/dashboard-insights');
+        const response = await fetch(`${API_URL}/ai/dashboard-insights');
         const data = await response.json();
         setAiData(data);
       } catch (err) {
@@ -39,7 +40,7 @@ export default function Dashboard() {
     
     const fetchWorkspaceInsights = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/ai/workspace-insights');
+        const response = await fetch(`${API_URL}/ai/workspace-insights');
         const data = await response.json();
         setWorkspaceInsights(data);
       } catch (err) {

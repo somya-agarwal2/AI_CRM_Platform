@@ -5,7 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,   } from 'recharts';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function PurchaseHistory() {
   const [orders, setOrders] = useState<any[]>([]);

@@ -4,7 +4,7 @@ import { Users, Filter, Plus,  X, Sparkles, Database, ChevronRight, Check } from
 import { differenceInDays } from 'date-fns';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function AudienceBuilder() {
   const [searchParams] = useSearchParams();

@@ -4,7 +4,7 @@ import { Search, Download, Upload, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 const ImportDataModal = ({ isOpen, onClose, onImportComplete }: any) => {
   const [jsonText, setJsonText] = useState('');

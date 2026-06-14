@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 export default function CustomerProfile() {
   const { id } = useParams<{ id: string }>();

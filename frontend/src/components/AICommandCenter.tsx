@@ -2,7 +2,7 @@ import  { useState, useEffect, useRef } from 'react';
 import {  Send, Bot, User, CheckCircle2, Activity,    Sparkles } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+import API_URL from '../config';
 
 type Message = {
   role: 'assistant' | 'user';
