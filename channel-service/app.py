@@ -3,10 +3,12 @@ import threading
 import time
 import requests
 import random
+import os
 
 app = Flask(__name__)
 
-WEBHOOK_URL = "http://localhost:5000/api/webhooks/status"
+# In production, set BACKEND_URL env var to your Render backend URL
+WEBHOOK_URL = os.environ.get('BACKEND_URL', 'http://localhost:5000') + '/api/webhooks/status'
 
 def simulate_delivery(message_id, channel, recipient):
     # Sent status
