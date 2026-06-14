@@ -4,8 +4,9 @@ from flask import current_app
 from models import db, Campaign, Message, Customer
 import uuid
 from datetime import datetime
+import os
 
-CHANNEL_SERVICE_URL = "http://localhost:5001/send"
+CHANNEL_SERVICE_URL = os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send'
 
 def send_campaign_async(app, campaign_id):
     with app.app_context():

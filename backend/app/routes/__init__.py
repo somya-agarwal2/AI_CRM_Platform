@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, jsonify, request
 from app.models import db, Customer, Campaign, Segment, Order, Journey, JourneyNode, DeliveryEvent, CampaignAiInsight, CampaignMessage
 from google import genai
@@ -73,7 +74,7 @@ def execute_personal_action(id):
             "content": data.get('message', 'Special offer just for you!')
         }
         try:
-            requests.post('http://localhost:5001/send', json=payload, timeout=2)
+            requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=payload, timeout=2)
         except Exception as e:
             print(f"Simulator call failed: {e}")
     threading.Thread(target=send_to_sim).start()
@@ -770,7 +771,7 @@ def launch_campaign(id):
                 "content": goal or "Hello"
             }
             try:
-                requests.post('http://localhost:5001/send', json=payload, timeout=2)
+                requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=payload, timeout=2)
             except:
                 pass
 
@@ -893,7 +894,7 @@ def activate_journey(id):
                 "content": "Journey Message"
             }
             try:
-                requests.post('http://localhost:5001/send', json=payload, timeout=2)
+                requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=payload, timeout=2)
             except:
                 pass
 
@@ -1982,7 +1983,7 @@ def channel_send_test():
         
     try:
         # Forward to simulator service on 5001
-        requests.post('http://localhost:5001/send', json=data, timeout=2)
+        requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=data, timeout=2)
         return jsonify({"status": "dispatched", "message_id": data['message_id']}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -2371,7 +2372,7 @@ def command_center_execute():
                     "content": message_content or "Hello"
                 }
                 try:
-                    requests.post('http://localhost:5001/send', json=payload, timeout=2)
+                    requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=payload, timeout=2)
                 except:
                     pass
 

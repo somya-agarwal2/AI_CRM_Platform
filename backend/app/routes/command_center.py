@@ -1,4 +1,5 @@
 import uuid
+import os
 import requests
 from flask import Blueprint, request, jsonify
 from app.models import db, Customer, Segment, Campaign, Journey, CustomerAction
@@ -137,7 +138,7 @@ def launch_strategy():
             "customer_id": cid
         }
         try:
-            requests.post('http://localhost:5001/send', json=payload, timeout=2)
+            requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=payload, timeout=2)
         except:
             pass
 
