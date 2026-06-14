@@ -130,11 +130,11 @@ def get_analytics():
 
     # === Monthly Revenue (last 6 months) ===
     monthly_rows = db.session.execute(text("""
-        SELECT strftime('%b', order_date) as month, SUM(amount) as revenue, COUNT(*) as orders
+        SELECT TO_CHAR(order_date, 'Mon') as month, SUM(amount) as revenue, COUNT(*) as orders
         FROM orders
-        WHERE order_date >= date('now', '-6 months')
-        GROUP BY strftime('%Y-%m', order_date)
-        ORDER BY strftime('%Y-%m', order_date)
+        WHERE order_date >= NOW() - INTERVAL '6 months'
+        GROUP BY TO_CHAR(order_date, 'YYYY-MM'), TO_CHAR(order_date, 'Mon')
+        ORDER BY TO_CHAR(order_date, 'YYYY-MM')
     """)).fetchall()
     monthly_revenue = [{"month": r[0], "revenue": round(float(r[1] or 0)), "orders": r[2]} for r in monthly_rows]
 
@@ -169,7 +169,7 @@ def get_analytics():
     # === Customer Metrics ===
     total_customers = Customer.query.count()
     high_churn_count = Customer.query.filter(Customer.churn_score > 0.7).count()
-    new_customers_row = db.session.execute(text("SELECT COUNT(*) FROM customers WHERE created_at >= date('now','-30 days')")).fetchone()
+    new_customers_row = db.session.execute(text("SELECT COUNT(*) FROM customers WHERE created_at >= NOW() - INTERVAL '30 days'")).fetchone()
     new_customers = int(new_customers_row[0] or 0)
 
     # === Top Cities ===
@@ -1022,11 +1022,11 @@ def list_customers():
     elif filter_type == 'vip':
         query = query.filter(Customer.order_count > 5) # simple VIP definition
     elif filter_type == 'inactive':
-        query = query.filter(Customer.last_purchase_date < text("datetime('now', '-60 days')"))
+        query = query.filter(Customer.last_purchase_date < text("NOW() - INTERVAL '60 days'"))
     elif filter_type == 'high_ltv':
         query = query.filter(Customer.total_spent > 1000)
     elif filter_type == 'recent':
-        query = query.filter(Customer.last_purchase_date > text("datetime('now', '-30 days')"))
+        query = query.filter(Customer.last_purchase_date > text("NOW() - INTERVAL '30 days'"))
 
     # Calculate KPIs (simplified for performance, normally cached or aggregated)
     total_customers = Customer.query.count()
@@ -1298,11 +1298,11 @@ def list_orders():
     highest_repeat_row = db.session.query(OrderItem.category, db.func.sum(OrderItem.quantity)).join(Order).join(Customer).filter(Customer.order_count > 1).group_by(OrderItem.category).order_by(db.func.sum(OrderItem.quantity).desc()).first()
     highest_repeat_category = highest_repeat_row[0] if highest_repeat_row else "N/A"
     
-    due_for_repurchase = Customer.query.filter(Customer.last_purchase_date < text("datetime('now', '-60 days')"), Customer.order_count > 0).count()
+    due_for_repurchase = Customer.query.filter(Customer.last_purchase_date < text("NOW() - INTERVAL '60 days'"), Customer.order_count > 0).count()
     
     insights = {
         "cross_sell": "Customers who purchased Shoes have a 42% chance of purchasing Jackets.",
-        "recent_buyers": Customer.query.filter(Customer.last_purchase_date > text("datetime('now', '-30 days')")).count(),
+        "recent_buyers": Customer.query.filter(Customer.last_purchase_date > text("NOW() - INTERVAL '30 days'")).count(),
         "one_time_buyers": Customer.query.filter(Customer.order_count == 1).count(),
         "potential_recovery_revenue": due_for_repurchase * avg_order_value,
         "most_purchased_product": most_purchased_product,
@@ -1341,7 +1341,7 @@ def get_purchase_insights():
 
     # Revenue Trends (Group by Month)
     trend_rows = db.session.query(
-        db.func.strftime('%Y-%m', Order.order_date).label('month'),
+        db.func.to_char(Order.order_date, 'YYYY-MM').label('month'),
         db.func.sum(Order.amount).label('revenue')
     ).group_by('month').order_by('month').limit(12).all()
     
@@ -1354,7 +1354,7 @@ def get_purchase_insights():
     vip_buyers = Customer.query.filter(Customer.total_spent > 1000).count()
     
     # Repurchase Analysis
-    due_for_repurchase = Customer.query.filter(Customer.last_purchase_date < text("datetime('now', '-60 days')"), Customer.order_count > 0).count()
+    due_for_repurchase = Customer.query.filter(Customer.last_purchase_date < text("NOW() - INTERVAL '60 days'"), Customer.order_count > 0).count()
     avg_purchase_gap = 28 # We can keep it mocked or calculate if needed
 
     return jsonify({
@@ -1532,9 +1532,8 @@ def _build_segment_query(filters):
             elif op == 'equals': conditions.append(f"order_count = :{param_name}")
         elif field == 'last_purchase_days':
             # e.g. last_purchase_days greater_than 60 means last_purchase_date < today - 60 days
-            # Simple sqlite snippet
-            if op in ['greater_than', 'greater_than_days']: conditions.append(f"last_purchase_date < datetime('now', '-{val} days')")
-            elif op in ['less_than', 'less_than_days']: conditions.append(f"last_purchase_date > datetime('now', '-{val} days')")
+            if op in ['greater_than', 'greater_than_days']: conditions.append(f"last_purchase_date < NOW() - INTERVAL '{val} days'")
+            elif op in ['less_than', 'less_than_days']: conditions.append(f"last_purchase_date > NOW() - INTERVAL '{val} days'")
         elif field == 'churn_score':
             if op == 'greater_than': conditions.append(f"churn_score > :{param_name}")
             elif op == 'less_than': conditions.append(f"churn_score < :{param_name}")
@@ -2268,12 +2267,11 @@ def command_center_intent():
         elif field == 'last_purchase_days':
             # E.g. > 60 days
             from sqlalchemy import text
-            if operator == '>': query = query.filter(Customer.last_purchase_date < text(f"datetime('now', '-{value} days')"))
-            elif operator == '<': query = query.filter(Customer.last_purchase_date > text(f"datetime('now', '-{value} days')"))
-            elif operator == '==': 
-                # e.g. == 1 means yesterday
-                query = query.filter(Customer.last_purchase_date > text(f"datetime('now', '-{value+1} days')"))
-                query = query.filter(Customer.last_purchase_date < text(f"datetime('now', '-{value-1} days')"))
+            if operator == '>': query = query.filter(Customer.last_purchase_date < text(f"NOW() - INTERVAL '{value} days'"))
+            elif operator == '<': query = query.filter(Customer.last_purchase_date > text(f"NOW() - INTERVAL '{value} days'"))
+            elif operator == '==':
+                query = query.filter(Customer.last_purchase_date > text(f"NOW() - INTERVAL '{value+1} days'"))
+                query = query.filter(Customer.last_purchase_date < text(f"NOW() - INTERVAL '{value-1} days'"))
 
     matched_customers = query.all()
     count = len(matched_customers)
