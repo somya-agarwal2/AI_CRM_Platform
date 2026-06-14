@@ -36,7 +36,7 @@ export default function Templates() {
 
   const fetchTemplates = async () => {
     try {
-      const res = await axios.get(`${API_URL}/templates');
+      const res = await axios.get(`${API_URL}/templates`);
       setTemplates(res.data);
     } catch (err) {
       console.error("Failed to fetch templates", err);
@@ -47,7 +47,7 @@ export default function Templates() {
 
   const createBlankTemplate = async () => {
     try {
-      const res = await axios.post(`${API_URL}/templates', {
+      const res = await axios.post(`${API_URL}/templates`, {
         name: 'Untitled Template',
         category: 'Promotional',
         json_content: JSON.stringify({ blocks: [] })
@@ -62,9 +62,9 @@ export default function Templates() {
     if (!aiPrompt.trim()) return;
     setGenerating(true);
     try {
-      const res = await axios.post(`${API_URL}/templates/ai-generate', { prompt: aiPrompt });
+      const res = await axios.post(`${API_URL}/templates/ai-generate`, { prompt: aiPrompt });
       const newTemplate = res.data;
-      const saveRes = await axios.post(`${API_URL}/templates', newTemplate);
+      const saveRes = await axios.post(`${API_URL}/templates`, newTemplate);
       setShowAIModal(false);
       setAiPrompt('');
       navigate(`/templates/editor/${saveRes.data.id}`);
@@ -90,7 +90,7 @@ export default function Templates() {
   const duplicateTemplate = async (t: any, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await axios.post(`${API_URL}/templates', {
+      await axios.post(`${API_URL}/templates`, {
         name: `${t.name} (Copy)`,
         category: t.category,
         html_content: t.html_content,
