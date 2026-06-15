@@ -1,6 +1,6 @@
 import  { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Users, Target,  Zap,  PlusCircle, Search, Filter,   Edit2, Copy, Trash2,   } from 'lucide-react';
+import { Users, Target,  Zap,  PlusCircle, Search, Filter,   Edit2, Copy, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import API_URL from '../config';
@@ -12,7 +12,14 @@ export default function AudiencesHub() {
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(true);
   const [selectedInsight, setSelectedInsight] = useState<any>(null);
+  const [creatingSegmentId, setCreatingSegmentId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const navigate = useNavigate();
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   useEffect(() => {
     fetchData();
@@ -86,14 +93,19 @@ export default function AudiencesHub() {
   if (!audiencesData) return <div>Error loading data.</div>;
 
   const createSegmentFromOpp = async (opp: any) => {
+    setCreatingSegmentId(opp.id);
     try {
-      await axios.post(`${API_URL}/ai/audience-opportunities/${opp.id}/convert`);
-      // Re-fetch data to show the newly created segment and update the AI opportunities list.
-      // Note: The backend will spawn a background thread to replenish the missing opportunity,
-      // so it might take ~5-10s for the 3rd opportunity to appear.
+      const res = await axios.post(`${API_URL}/ai/audience-opportunities/${opp.id}/convert`);
+      showToast('success', `Segment "${opp.segment_name}" created successfully!`);
+      setSelectedInsight(null);
       fetchData();
-    } catch (e) {
+      // Navigate to segments list after a short delay
+      setTimeout(() => navigate('/audiences'), 1500);
+    } catch (e: any) {
       console.error("Failed to convert opportunity", e);
+      showToast('error', e?.response?.data?.error || 'Failed to create segment. Please try again.');
+    } finally {
+      setCreatingSegmentId(null);
     }
   };
 
@@ -240,9 +252,12 @@ export default function AudiencesHub() {
                     <button 
                       className="btn btn-primary" 
                       onClick={() => createSegmentFromOpp(opp)}
-                      style={{ padding: '8px 16px', fontSize: '13px', background: 'var(--accent-secondary)', color: 'white', border: 'none', fontWeight: 600 }}
+                      disabled={creatingSegmentId === opp.id}
+                      style={{ padding: '8px 16px', fontSize: '13px', background: creatingSegmentId === opp.id ? 'rgba(36,138,88,0.5)' : 'var(--accent-secondary)', color: 'white', border: 'none', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
                     >
-                      Create Segment
+                      {creatingSegmentId === opp.id ? (
+                        <><div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Creating...</>
+                      ) : 'Create Segment'}
                     </button>
                   </div>
                 </div>
@@ -390,22 +405,23 @@ export default function AudiencesHub() {
               <div style={{ flexShrink: 0, padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: `1px solid var(--border-subtle)` }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '12px', position: 'sticky', top: 0, background: 'var(--bg-secondary)', paddingBottom: '8px' }}>Customers Included</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedInsight.customers && selectedInsight.customers.map((c: any) => (
-                    <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1fr', alignItems: 'center', fontSize: '12px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
-                      <span style={{ color: 'var(--accent-secondary)', fontWeight: 600 }}>${c.total_spent}</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{new Date(c.last_purchase_date).toLocaleDateString()}</span>
-                      <span style={{ 
-                        color: c.churn_score > 70 ? '#ef4444' : c.churn_score > 40 ? '#f59e0b' : 'var(--accent-secondary)',
-                        fontWeight: 600,
-                        textAlign: 'right'
-                      }}>
-                        {c.churn_score > 70 ? 'High' : c.churn_score > 40 ? 'Medium' : 'Low'} Risk
-                      </span>
-                    </div>
-                  ))}
-                  {(!selectedInsight.customers || selectedInsight.customers.length === 0) && (
-                    <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', textAlign: 'center', padding: '12px' }}>Loading customers...</div>
+                  {selectedInsight.customers && selectedInsight.customers.length > 0 ? (
+                    selectedInsight.customers.slice(0, 8).map((c: any) => (
+                      <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr 1fr', alignItems: 'center', fontSize: '12px', padding: '8px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</span>
+                        <span style={{ color: 'var(--accent-secondary)', fontWeight: 600 }}>${c.total_spent?.toLocaleString()}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{c.last_purchase_date ? new Date(c.last_purchase_date).toLocaleDateString() : 'N/A'}</span>
+                        <span style={{ 
+                          color: c.churn_score > 70 ? '#ef4444' : c.churn_score > 40 ? '#f59e0b' : 'var(--accent-secondary)',
+                          fontWeight: 600,
+                          textAlign: 'right'
+                        }}>
+                          {c.churn_score > 70 ? 'High' : c.churn_score > 40 ? 'Med' : 'Low'}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: '12px', textAlign: 'center', padding: '12px' }}>No customer data available.</div>
                   )}
                 </div>
               </div>
@@ -420,13 +436,15 @@ export default function AudiencesHub() {
                 </button>
                 <button 
                   className="btn btn-primary" 
+                  disabled={creatingSegmentId === selectedInsight?.id}
                   onClick={() => {
                     createSegmentFromOpp(selectedInsight);
-                    setSelectedInsight(null);
                   }}
-                  style={{ flex: 1, padding: '12px', justifyContent: 'center', background: 'var(--accent-secondary)', border: 'none' }}
+                  style={{ flex: 1, padding: '12px', justifyContent: 'center', background: creatingSegmentId === selectedInsight?.id ? 'rgba(36,138,88,0.5)' : 'var(--accent-secondary)', border: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  Create Segment
+                  {creatingSegmentId === selectedInsight?.id ? (
+                    <><div style={{ width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Creating...</>
+                  ) : 'Create Segment'}
                 </button>
               </div>
             </div>
@@ -435,5 +453,21 @@ export default function AudiencesHub() {
       )}
 
     </div>
+
+    {/* Toast Notification */}
+    {toast && (
+      <div style={{
+        position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
+        display: 'flex', alignItems: 'center', gap: '10px',
+        background: toast.type === 'success' ? 'rgba(36, 138, 88, 0.95)' : 'rgba(239, 68, 68, 0.95)',
+        color: 'white', padding: '14px 20px', borderRadius: '12px',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.3)', fontSize: '14px', fontWeight: 600,
+        animation: 'fadeIn 0.3s ease-out',
+        backdropFilter: 'blur(8px)'
+      }}>
+        {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+        {toast.message}
+      </div>
+    )}
   );
 }

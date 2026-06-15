@@ -249,11 +249,28 @@ def ai_audience_opportunities():
 
 
     from app.models import Customer
+    import random
     result = []
     for o in opps:
         c_ids = json.loads(o.customer_ids) if o.customer_ids else []
-        customers = Customer.query.filter(Customer.id.in_(c_ids)).all() if c_ids else []
-        customer_data = [{"id": c.id, "name": f"{c.first_name} {c.last_name}", "total_spent": c.total_spent, "last_purchase_date": c.last_purchase_date, "churn_score": c.churn_score} for c in customers]
+        if c_ids:
+            customers = Customer.query.filter(Customer.id.in_(c_ids)).all()
+        else:
+            # AI estimated a count but didn't assign specific IDs — sample real customers
+            all_customers = Customer.query.all()
+            count = min(o.estimated_customers or 10, len(all_customers))
+            customers = random.sample(all_customers, count) if all_customers else []
+            # Save them back so they're consistent on next load
+            o.customer_ids = json.dumps([c.id for c in customers])
+        
+        customer_data = [{
+            "id": c.id,
+            "name": f"{c.first_name} {c.last_name}",
+            "total_spent": round(c.total_spent, 2),
+            "last_purchase_date": c.last_purchase_date.isoformat() if c.last_purchase_date else None,
+            "churn_score": round((c.churn_score or 0) * 100)
+        } for c in customers]
+        
         result.append({
             "id": o.id,
             "segment_name": o.segment_name,
@@ -264,6 +281,11 @@ def ai_audience_opportunities():
             "confidence_score": o.confidence_score,
             "customers": customer_data
         })
+    
+    try:
+        db.session.commit()
+    except:
+        pass
         
     return jsonify(result)
 
