@@ -104,6 +104,11 @@ export default function AudiencesHub() {
       // Remove the converted opportunity from local state immediately
       setAiOpportunities(prev => prev.filter(o => o.id !== opp.id));
       
+      // Scroll to the segments list to show the new segment
+      setTimeout(() => {
+        document.getElementById('segments-list-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+      
       // Poll for new replacement opportunity every 5 seconds up to 30s
       let polls = 0;
       const pollInterval = setInterval(async () => {
@@ -289,7 +294,7 @@ export default function AudiencesHub() {
       </div>
 
       {/* Enterprise Data Table */}
-      <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+      <div id="segments-list-section" className="card" style={{ padding: '0', overflow: 'hidden' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ fontSize: '16px', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Users size={18} color="var(--accent-secondary)" /> All Segments Data
