@@ -28,7 +28,6 @@
 - [Project Structure](#project-structure)
 - [Full Application Flow](#full-application-flow)
 - [API Reference](#api-reference)
-- [Database Schema](#database-schema)
 - [Environment Variables](#environment-variables)
 - [Local Development](#local-development)
 - [Deployment Guide](#deployment-guide)
@@ -60,7 +59,6 @@ The platform uses **Google Gemini AI** to:
 | **Journey Builder** | Visual drag-and-drop customer journey automation |
 | **AI Command Center** | Natural language → instant campaign. Type a goal, AI executes it |
 | **Template Editor** | Drag-and-drop email/WhatsApp template builder with 13 content blocks |
-| **A/B Testing** | Built-in A/B test framework for campaigns |
 | **Retention Intelligence** | At-risk customer identification and win-back strategy generator |
 | **Value Intelligence** | LTV segmentation — VIP, high-value, at-risk revenue analysis |
 | **Channel Simulator** | Simulates sent → delivered → opened → clicked → converted pipeline |
@@ -431,71 +429,6 @@ Templates library → Create / Select template
 
 ---
 
-## 🗄️ Database Schema
-
-```
-customers
-  id, first_name, last_name, email, phone, city
-  total_spent, order_count, churn_score, ltv_prediction
-  last_purchase_date, created_at
-
-orders
-  id, order_number, customer_id (FK), amount
-  status, order_date
-
-order_items
-  id, order_id (FK), product_name, category
-  quantity, price
-
-segments
-  id, name, description, filters (JSON), query_sql
-  created_at
-
-segment_customers
-  segment_id (FK), customer_id (FK)
-
-campaigns
-  id, name, customer_id (FK), audience_id (FK)
-  type, channels, status, goal
-  message_template, expected_revenue
-  open_count, click_count, generated_by
-  created_at
-
-journeys
-  id, name, campaign_id (FK), customer_id (FK)
-  type, status, nodes (JSON), created_at
-
-journey_nodes
-  id, journey_id (FK), type, label
-  position_x, position_y, data (JSON)
-
-delivery_events
-  id, campaign_id (FK), customer_id (FK)
-  channel, status, revenue, created_at
-
-ai_insights
-  id, entity_type, entity_id
-  insight_type, content, confidence, created_at
-
-ai_opportunities
-  id, segment_name, reasoning, target_criteria
-  estimated_customers, estimated_revenue
-  confidence_score, status
-
-templates
-  id, name, category, thumbnail
-  html_content, json_content, created_at
-
-customer_actions
-  id, customer_id (FK), campaign_id (FK)
-  action_type, status, channel, created_at
-
-analytics
-  id, date, metric_name, metric_value
-```
-
----
-
 ## 🔐 Environment Variables
 
 ### Backend (Render Web Service)
@@ -671,8 +604,3 @@ python db/seed.py
 B.Tech Student, ABES Engineering College  
 [GitHub](https://github.com/somya-agarwal2)
 
----
-
-## 📄 License
-
-This project is built for educational and portfolio demonstration purposes.
