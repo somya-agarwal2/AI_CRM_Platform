@@ -291,9 +291,9 @@ def ai_audience_opportunities():
 
 @bp.route('/ai/audience-opportunities/<id>/convert', methods=['POST'])
 def convert_audience_opportunity(id):
-    from app.models import AIAudienceOpportunity, Segment, db
+    from app.models import AIAudienceOpportunity, Segment, Customer, db
     from app.services.ai_service import ai_service
-    import threading
+    import threading, random
     
     opp = AIAudienceOpportunity.query.get_or_404(id)
     if opp.status == 'converted':
@@ -301,49 +301,62 @@ def convert_audience_opportunity(id):
         
     opp.status = 'converted'
     
-    # We no longer ask AI to generate filters, we just use the customer_ids!
+    # customer_ids were saved by the GET /audience-opportunities endpoint
     customer_ids = json.loads(opp.customer_ids) if opp.customer_ids else []
+    
+    # If still empty (edge case), sample real customers now
+    if not customer_ids:
+        all_customers = Customer.query.all()
+        count = min(opp.estimated_customers or 10, len(all_customers))
+        sampled = random.sample(all_customers, count) if all_customers else []
+        customer_ids = [c.id for c in sampled]
+        opp.customer_ids = json.dumps(customer_ids)
 
     # Find or Create segment
-    # Check if a segment with this exact name already exists (or same IDs)
     existing_segment = Segment.query.filter_by(name=opp.segment_name).first()
 
     if existing_segment:
         new_segment = existing_segment
+        # Ensure customers are added even if segment existed
+        existing_ids = {c.id for c in existing_segment.customers}
+        customers_to_add = Customer.query.filter(
+            Customer.id.in_(customer_ids),
+            ~Customer.id.in_(existing_ids)
+        ).all() if customer_ids else []
+        if customers_to_add:
+            existing_segment.customers.extend(customers_to_add)
     else:
         new_segment = Segment(
             name=opp.segment_name,
             description=opp.reasoning,
             is_ai=True,
-            filters="[]" # Static segment, no dynamic filters
+            filters="[]"
         )
         db.session.add(new_segment)
-        # Add customers directly
-        from app.models import Customer
+        db.session.flush()  # get new_segment.id
         if customer_ids:
             customers = Customer.query.filter(Customer.id.in_(customer_ids)).all()
             new_segment.customers.extend(customers)
             
     db.session.commit()
-            
 
-    
     # Regenerate opportunities in background to maintain exactly 3
     remaining = AIAudienceOpportunity.query.filter_by(status='pending').count()
-    if remaining < 3:
-        def bg_regen(limit):
-            from app import create_app
-            app = create_app()
-            with app.app_context():
-                from app.services.ai_service import ai_service
-                try:
-                    ai_service.generate_audience_opportunities(limit=limit)
-                except:
-                    pass
-                
-        threading.Thread(target=bg_regen, args=(3 - remaining,)).start()
     
-    return jsonify({"success": True, "segment_id": new_segment.id})
+    def bg_regen(limit):
+        from app import create_app
+        app2 = create_app()
+        with app2.app_context():
+            from app.services.ai_service import ai_service as svc
+            try:
+                svc.generate_audience_opportunities(limit=limit)
+            except Exception as e:
+                print(f"bg_regen failed: {e}")
+            
+    threading.Thread(target=bg_regen, args=(max(1, 3 - remaining),), daemon=True).start()
+    
+    return jsonify({"success": True, "segment_id": new_segment.id, "segment_name": new_segment.name, "customer_count": len(customer_ids)})
+
 @bp.route('/ai/audience-opportunities/<id>/automate', methods=['POST'])
 def automate_audience_opportunity(id):
     from app.models import AIAudienceOpportunity, Segment, Campaign, db

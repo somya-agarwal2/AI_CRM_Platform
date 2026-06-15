@@ -96,11 +96,29 @@ export default function AudiencesHub() {
     setCreatingSegmentId(opp.id);
     try {
       const res = await axios.post(`${API_URL}/ai/audience-opportunities/${opp.id}/convert`);
-      showToast('success', `Segment "${opp.segment_name}" created successfully!`);
+      const segName = res.data?.segment_name || opp.segment_name;
+      const count = res.data?.customer_count || opp.estimated_customers;
+      showToast('success', `✅ Segment "${segName}" created with ${count} customers!`);
       setSelectedInsight(null);
+      
+      // Remove the converted opportunity from local state immediately
+      setAiOpportunities(prev => prev.filter(o => o.id !== opp.id));
+      
+      // Poll for new replacement opportunity every 5 seconds up to 30s
+      let polls = 0;
+      const pollInterval = setInterval(async () => {
+        polls++;
+        try {
+          const oppsRes = await axios.get(`${API_URL}/ai/audience-opportunities`);
+          if (Array.isArray(oppsRes.data)) {
+            setAiOpportunities(oppsRes.data);
+          }
+        } catch {}
+        if (polls >= 6) clearInterval(pollInterval);
+      }, 5000);
+      
+      // Also refresh segment list
       fetchData();
-      // Navigate to segments list after a short delay
-      setTimeout(() => navigate('/audiences'), 1500);
     } catch (e: any) {
       console.error("Failed to convert opportunity", e);
       showToast('error', e?.response?.data?.error || 'Failed to create segment. Please try again.');
@@ -108,6 +126,7 @@ export default function AudiencesHub() {
       setCreatingSegmentId(null);
     }
   };
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', paddingBottom: '40px' }}>
