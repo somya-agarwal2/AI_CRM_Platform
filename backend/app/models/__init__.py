@@ -210,7 +210,7 @@ class Template(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=generate_uuid)
     name = db.Column(db.String(100), nullable=False)
     category = db.Column(db.String(50))
-    thumbnail = db.Column(db.String(255))
+    thumbnail = db.Column(db.Text)
     html_content = db.Column(db.Text)
     json_content = db.Column(db.Text)
     usage_count = db.Column(db.Integer, default=0)

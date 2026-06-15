@@ -23,6 +23,14 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     jwt.init_app(app)
 
+    # Ensure templates.thumbnail is TEXT (PostgreSQL) or ignored (SQLite)
+    with app.app_context():
+        try:
+            db.session.execute(db.text("ALTER TABLE templates ALTER COLUMN thumbnail TYPE TEXT;"))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Register blueprints (stubs to be implemented)
     from app.routes import bp as routes_bp
     from app.routes.command_center import bp as command_center_bp

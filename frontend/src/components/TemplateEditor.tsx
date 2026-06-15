@@ -87,8 +87,9 @@ export default function TemplateEditor() {
       setTemplate({ ...template, thumbnail: newThumbnail });
       
       setTimeout(() => setSaving(false), 800);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Save error:", err);
+      alert('Failed to save template: ' + (err.response?.data?.error || err.message));
       setSaving(false);
     }
   };
