@@ -599,8 +599,11 @@ def get_campaign_insights(id):
 
 @bp.route('/campaigns', methods=['GET'])
 def list_campaigns():
-    camp_type = request.args.get('type', 'bulk')
-    campaigns = Campaign.query.filter_by(type=camp_type).order_by(Campaign.created_at.desc()).all()
+    camp_type = request.args.get('type', None)
+    if camp_type and camp_type != 'all':
+        campaigns = Campaign.query.filter_by(type=camp_type).order_by(Campaign.created_at.desc()).all()
+    else:
+        campaigns = Campaign.query.order_by(Campaign.created_at.desc()).all()
     res = []
     for c in campaigns:
         # compute actual counts from delivery_events

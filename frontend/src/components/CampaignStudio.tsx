@@ -500,7 +500,7 @@ const generateRichCampaignData = (baseCampaign: any, segmentCount: number = 0) =
 export default function CampaignStudio() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('opportunities');
+  const [activeTab, setActiveTab] = useState('All');
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState(1);
   const [generatingOppId, setGeneratingOppId] = useState<string | null>(null);
