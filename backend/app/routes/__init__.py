@@ -239,6 +239,14 @@ def ai_audience_opportunities():
     import threading
     
     opps = AIAudienceOpportunity.query.filter_by(status='pending').all()
+    if not opps:
+        try:
+            ai_service.generate_audience_opportunities(limit=3)
+            opps = AIAudienceOpportunity.query.filter_by(status='pending').all()
+        except Exception as e:
+            print(f"Error generating audience opportunities: {e}")
+            pass
+
 
     from app.models import Customer
     result = []
@@ -1994,6 +2002,14 @@ def get_campaign_opportunities():
     import threading
     
     pending = AICampaignOpportunity.query.filter_by(status='pending').all()
+    if not pending:
+        try:
+            ai_service.generate_campaign_opportunities(limit=3)
+            pending = AICampaignOpportunity.query.filter_by(status='pending').all()
+        except Exception as e:
+            print(f"Error generating campaign opportunities: {e}")
+            pass
+
         
     return jsonify([
         {
