@@ -747,11 +747,13 @@ def launch_campaign(id):
         return jsonify({"error": "Audience not found"}), 404
         
     filters = json.loads(segment.filters) if segment.filters else []
-    query_str, params = _build_segment_query(filters)
-    
-    result = db.session.execute(text(query_str), params).fetchall()
-    customer_ids = [row.id for row in result]
-    customers = Customer.query.filter(Customer.id.in_(customer_ids)).all() if customer_ids else []
+    if not filters and segment.customers:
+        customers = segment.customers
+    else:
+        query_str, params = _build_segment_query(filters)
+        result = db.session.execute(text(query_str), params).fetchall()
+        customer_ids = [row.id for row in result]
+        customers = Customer.query.filter(Customer.id.in_(customer_ids)).all() if customer_ids else []
     
     events = []
     for customer in customers:
@@ -769,19 +771,22 @@ def launch_campaign(id):
     
     events_data = [{"id": e.id, "email": c.email, "phone": c.phone, "customer_id": c.id, "campaign_id": campaign.id} for e, c in zip(events, customers)]
     def send_to_sim(events_list, channel, goal):
-        for data in events_list:
-            payload = {
-                "message_id": data['id'],
-                "customer_id": data['customer_id'],
-                "campaign_id": data['campaign_id'],
-                "recipient": data['phone'] if channel.lower() in ['whatsapp', 'sms'] else data['email'],
-                "channel": channel.lower(),
-                "content": goal or "Hello"
-            }
-            try:
-                requests.post(os.environ.get('CHANNEL_SERVICE_URL', 'http://localhost:5001') + '/send', json=payload, timeout=2)
-            except:
-                pass
+        import time
+        import random
+        from app import create_app
+        from app.models import DeliveryEvent, db
+        app = create_app()
+        with app.app_context():
+            for data in events_list:
+                event = DeliveryEvent.query.get(data['id'])
+                if event:
+                    event.status = 'Delivered'
+                    if random.random() < 0.45:
+                        event.status = 'Opened'
+                        if random.random() < 0.3:
+                            event.status = 'Clicked'
+                    db.session.commit()
+                time.sleep(0.05)
 
     import threading
     t = threading.Thread(target=send_to_sim, args=(events_data, campaign.channels or 'Email', campaign.goal))
@@ -2047,25 +2052,21 @@ def generate_campaign_from_opportunity(id):
                 "offer": "10% OFF"
             }
         
-        # 2. Find or Create Target Segment mapping
+        # 2. Find or Create Target segment
         seg = Segment.query.filter_by(name=opp.target_segment_name).first()
         if not seg:
-            seg = Segment(
-                name=opp.target_segment_name,
-                description=opp.target_segment_description,
-                filters='[]'
-            )
+            # Create a static segment with no customers initially, just to hold the name
+            seg = Segment(name=opp.target_segment_name, description=opp.target_segment_description, is_ai=True, filters="[]")
             db.session.add(seg)
             db.session.flush()
-        
-        from sqlalchemy import text
-        query_str, params = _build_segment_query([])
-        result = db.session.execute(text(query_str), params).fetchall()
-        customer_ids = [row.id for row in result]
-        if customer_ids:
+            
+            # Select random customers to match customer_count
             from app.models import Customer
-            customers = Customer.query.filter(Customer.id.in_(customer_ids)).all()
-            seg.customers.extend(customers)
+            import random
+            all_customers = Customer.query.all()
+            if all_customers:
+                selected = random.sample(all_customers, min(len(all_customers), opp.customer_count))
+                seg.customers.extend(selected)
         
         # 3. Create Campaign
         camp = Campaign(
@@ -2109,9 +2110,8 @@ def generate_campaign_from_opportunity(id):
         db.session.commit()
         
         # Launch campaign automatically
-        import requests
         try:
-            requests.post(f"http://127.0.0.1:5000/api/campaigns/{camp.id}/launch", timeout=2)
+            launch_campaign(camp.id)
         except Exception as e:
             print("Failed to auto-launch campaign", e)
         
