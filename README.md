@@ -151,31 +151,6 @@ User Action (e.g., "Launch Campaign")
                     Updates real-time campaign metrics
 ```
 
-### AI Intelligence Flow
-
-```
-Customer Data in DB
-       │
-       ▼
-Prediction Engine (scikit-learn)
-  ├─ Churn Score (0.0 → 1.0)
-  ├─ LTV Prediction ($)
-  └─ Segment Classification
-       │
-       ▼
-AI Service (Google Gemini 2.5 Flash)
-  ├─ /ai/dashboard-insights  → KPI summaries & alerts
-  ├─ /ai/workspace-insights  → Strategic recommendations
-  ├─ /ai/customer/{id}       → Personal next-best-action
-  ├─ /ai/journey/generate    → Auto-generate journey nodes
-  ├─ /ai/segment/suggest     → Audience building from text
-  ├─ /ai/campaign/message    → Personalized message copy
-  └─ /ai/command-center      → NL → Campaign (end-to-end)
-       │
-       ▼
-Stored as AIInsight records in DB
-Served to frontend on demand
-```
 
 ---
 
@@ -215,59 +190,6 @@ Served to frontend on demand
 | **Render (PostgreSQL)** | Managed database |
 | **Render (Web Service)** | Channel simulator service |
 
----
-
-## 📁 Project Structure
-
-```
-ai_crm/
-├── frontend/                    # React + TypeScript frontend
-│   ├── src/
-│   │   ├── components/          # All page components
-│   │   │   ├── Dashboard.tsx           # Main KPI dashboard
-│   │   │   ├── CustomerIntelligence.tsx # Customer 360° view
-│   │   │   ├── PurchaseHistory.tsx     # Order analytics
-│   │   │   ├── CampaignStudio.tsx      # Campaign builder
-│   │   │   ├── JourneyBuilder.tsx      # Visual journey editor
-│   │   │   ├── AICommandCenter.tsx     # NL → Campaign
-│   │   │   ├── Templates.tsx           # Template library
-│   │   │   ├── TemplateEditor.tsx      # Drag-drop email builder
-│   │   │   ├── AudiencesHub.tsx        # Segment management
-│   │   │   ├── ABTesting.tsx           # A/B test framework
-│   │   │   ├── RetentionIntelligence.tsx # Churn prevention
-│   │   │   ├── ValueIntelligence.tsx   # LTV analysis
-│   │   │   └── ...
-│   │   ├── config.ts            # API base URL config
-│   │   ├── App.tsx              # Router & layout
-│   │   └── main.tsx             # Entry point
-│   ├── vercel.json              # SPA routing config for Vercel
-│   ├── vite.config.ts
-│   └── package.json
-│
-├── backend/                     # Flask Python backend
-│   ├── app/
-│   │   ├── __init__.py          # App factory (create_app)
-│   │   ├── config.py            # Config (DB URI, keys)
-│   │   ├── models/              # SQLAlchemy ORM models
-│   │   │   └── (Customer, Order, Campaign, Segment,
-│   │   │       Journey, Template, AIInsight, etc.)
-│   │   ├── routes/
-│   │   │   ├── __init__.py      # Main API routes (2300+ lines)
-│   │   │   └── command_center.py # AI Command Center routes
-│   │   └── services/
-│   │       ├── ai_service.py    # Gemini AI integration
-│   │       └── prediction_service.py # ML churn/LTV engine
-│   ├── db/
-│   │   └── seed.py              # Database seeder (150 customers)
-│   ├── wsgi.py                  # Gunicorn entry point
-│   └── requirements.txt
-│
-├── channel-service/             # Delivery simulator microservice
-│   ├── app.py                   # Flask app simulating delivery
-│   └── requirements.txt
-│
-└── README.md
-```
 
 ---
 
