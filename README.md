@@ -399,17 +399,6 @@ python db/seed.py
 
 ---
 
-## 🔑 Key Design Decisions
-
-| Decision | Rationale |
-|----------|-----------|
-| **Flask over Django** | Lightweight, flexible routing for an API-first backend |
-| **SQLAlchemy ORM** | Database-agnostic (SQLite locally, PostgreSQL in production) |
-| **Gemini 2.5 Flash** | Fast, cost-effective LLM for real-time AI responses |
-| **Channel Microservice** | Decoupled delivery simulation — replaceable with real Twilio/SendGrid |
-| **scikit-learn on-server** | Real ML predictions without external ML APIs |
-| **Vite + React** | Fast HMR, optimized builds, TypeScript out of the box |
-| **Vercel + Render** | Zero-config deployment, free tiers for portfolio/demo use |
 
 ---
 
