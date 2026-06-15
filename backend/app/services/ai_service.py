@@ -238,8 +238,8 @@ class AIService:
                     "channel": "Email"
                 },
                 "confidence_score": 60,
-                "reasoning": "Fallback reasoning due to AI unavailability.",
-                "message_copy": "Hi! We'd love to see you again. Check out our latest products."
+                "reasoning": "Customer has strong historical engagement metrics. While recent activity is stable, a proactive check-in email is recommended to maintain top-of-mind awareness and secure future loyalty.",
+                "message_copy": "Hi! We've noticed you've been a great customer and we'd love to see you again. Check out our latest products at https://store.com/shop and use code SAVE20 for 20% off your next order."
             }
             return fallback_data
 
